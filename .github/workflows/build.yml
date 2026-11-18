@@ -1,7 +1,11 @@
 # Automatically build the project and run any configured tests for every push
 # and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
+# certain platforms and Java versions, and provides a first line of defence
 # against bad commits.
+#
+# The build matrix is intentionally explicit: every Minecraft patch, loader
+# version, mapping set and Java toolchain is pinned in gradle.properties, so a
+# new target means a new matrix entry, not a silent upgrade.
 
 name: build
 on: [pull_request, push]
@@ -9,6 +13,10 @@ on: [pull_request, push]
 jobs:
   build:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['21']
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
@@ -17,8 +25,10 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v5
         with:
-          java-version: '25'
-          distribution: 'microsoft'
+          distribution: microsoft
+          java-version: ${{ matrix.java }}
+      - name: setup gradle cache
+        uses: gradle/actions/setup-gradle@v4
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build
